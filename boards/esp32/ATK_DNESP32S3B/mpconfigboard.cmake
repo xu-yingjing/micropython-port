@@ -1,7 +1,5 @@
 set(IDF_TARGET esp32s3)
 
-message(STATUS "MICROPY_BOARD_DIR: ${MICROPY_BOARD_DIR}")
-
 set(SDKCONFIG_DEFAULTS
     boards/sdkconfig.base
     boards/sdkconfig.usb
@@ -11,3 +9,5 @@ set(SDKCONFIG_DEFAULTS
     boards/sdkconfig.spiram_oct
     ${MICROPY_BOARD_DIR}/sdkconfig.board
 )
+
+set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
