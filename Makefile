@@ -2,10 +2,10 @@ PWD := $(shell pwd)
 
 ARCH ?= esp32
 BOARD ?= ATK_DNESP32S3B
-C_MODULES_DIR ?= $(PWD)/cmodules
 
 BOARD_DIR := $(PWD)/boards/$(ARCH)/$(BOARD)
 MICROPYTHON_PORT_DIR := $(PWD)/components/micropython/ports/$(ARCH)
+C_MODULES_DIR := $(BOARD_DIR)/cmodules
 BUILD_DIR := $(PWD)/build-$(ARCH)-$(BOARD)
 
 ifeq ($(wildcard $(BOARD_DIR)/.),)
