@@ -5,8 +5,14 @@
 # needs to be duplicated for out-of-tree builds, and can easily get out of date.
 cmake_minimum_required(VERSION 3.12)
 
-if(NOT MICROPY_ORIGINAL_PORT_DIR)
-    get_filename_component(MICROPY_ORIGINAL_PORT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../components/micropython/ports/esp32 ABSOLUTE)
+# Set location of base MicroPython directory.
+if(NOT MICROPY_DIR)
+    get_filename_component(MICROPY_DIR ${CMAKE_CURRENT_LIST_DIR}/../../components/micropython ABSOLUTE)
+endif()
+
+# Set location of the ESP32 port directory.
+if(NOT MICROPY_PORT_DIR)
+    get_filename_component(MICROPY_PORT_DIR ${MICROPY_DIR}/ports/esp32 ABSOLUTE)
 endif()
 
 # Set the board if it's not already set.

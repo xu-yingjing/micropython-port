@@ -4,10 +4,6 @@
 # (or included from an out-of-tree main component CMakeLists.txt for out-of-tree
 # builds.)
 
-if(NOT MICROPY_ORIGINAL_PORT_DIR)
-    get_filename_component(MICROPY_ORIGINAL_PORT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../components/micropython/ports/esp32 ABSOLUTE)
-endif()
-
 # Set location of base MicroPython directory.
 if(NOT MICROPY_DIR)
     get_filename_component(MICROPY_DIR ${CMAKE_CURRENT_LIST_DIR}/../../components/micropython ABSOLUTE)
@@ -15,7 +11,7 @@ endif()
 
 # Set location of the ESP32 port directory.
 if(NOT MICROPY_PORT_DIR)
-    get_filename_component(MICROPY_PORT_DIR ${CMAKE_CURRENT_LIST_DIR} ABSOLUTE)
+    get_filename_component(MICROPY_PORT_DIR ${MICROPY_DIR}/ports/esp32 ABSOLUTE)
 endif()
 
 # RISC-V specific inclusions
@@ -48,7 +44,7 @@ if(NOT CMAKE_BUILD_EARLY_EXPANSION)
 endif()
 
 list(APPEND MICROPY_QSTRDEFS_PORT
-    ${MICROPY_ORIGINAL_PORT_DIR}/qstrdefsport.h
+    ${MICROPY_PORT_DIR}/qstrdefsport.h
 )
 
 list(APPEND MICROPY_SOURCE_SHARED
@@ -146,7 +142,7 @@ list(APPEND MICROPY_SOURCE_PORT
     machine_sdcard.c
     modespnow.c
 )
-list(TRANSFORM MICROPY_SOURCE_PORT PREPEND ${MICROPY_ORIGINAL_PORT_DIR}/)
+list(TRANSFORM MICROPY_SOURCE_PORT PREPEND ${MICROPY_PORT_DIR}/)
 list(APPEND MICROPY_SOURCE_PORT ${CMAKE_BINARY_DIR}/pins.c)
 
 list(APPEND MICROPY_SOURCE_QSTR
@@ -227,7 +223,7 @@ idf_component_register(
         ${MICROPY_INC_CORE}
         ${MICROPY_INC_USERMOD}
         ${MICROPY_INC_TINYUSB}
-        ${MICROPY_ORIGINAL_PORT_DIR}
+        ${MICROPY_PORT_DIR}
         ${MICROPY_BOARD_DIR}
         ${CMAKE_BINARY_DIR}
     LDFRAGMENTS
@@ -304,8 +300,8 @@ include(${MICROPY_DIR}/py/mkrules.cmake)
 
 # Generate source files for named pins (requires mkrules.cmake for MICROPY_GENHDR_DIR).
 
-set(GEN_PINS_PREFIX "${MICROPY_ORIGINAL_PORT_DIR}/boards/pins_prefix.c")
-set(GEN_PINS_MKPINS "${MICROPY_ORIGINAL_PORT_DIR}/boards/make-pins.py")
+set(GEN_PINS_PREFIX "${MICROPY_PORT_DIR}/boards/pins_prefix.c")
+set(GEN_PINS_MKPINS "${MICROPY_PORT_DIR}/boards/make-pins.py")
 set(GEN_PINS_SRC "${CMAKE_BINARY_DIR}/pins.c")
 set(GEN_PINS_HDR "${MICROPY_GENHDR_DIR}/pins.h")
 

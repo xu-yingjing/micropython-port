@@ -4,7 +4,7 @@
 
 include ../../components/micropython/py/verbose.mk
 
-ORIGINAL_PORT_DIR := $(abspath ../../components/micropython/ports/esp32)
+MICROPY_PORT_DIR := $(abspath ../../components/micropython/ports/esp32)
 
 # Select the board to build for:
 ifdef BOARD_DIR
@@ -74,7 +74,7 @@ endef
 
 all:
 	$(Q)idf.py $(IDFPY_FLAGS) -B $(BUILD) build || (echo -e $(HELP_BUILD_ERROR); false)
-	$(Q)$(PYTHON) $(ORIGINAL_PORT_DIR)/makeimg.py \
+	$(Q)$(PYTHON) $(MICROPY_PORT_DIR)/makeimg.py \
 		$(BUILD)/sdkconfig \
 		$(BUILD)/bootloader/bootloader.bin \
 		$(BUILD)/partition_table/partition-table.bin \
