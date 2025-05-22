@@ -1,0 +1,28 @@
+#ifndef __DRV_CONFIG_H
+#define __DRV_CONFIG_H
+
+#define CONFIG_BUS_I2C0_SDA_IO_NUM  (GPIO_NUM_48)
+#define CONFIG_BUS_I2C0_SCL_IO_NUM  (GPIO_NUM_45)
+
+#define CONFIG_XL9555_I2C_PORT      (I2C_NUM_0)
+#define CONFIG_XL9555_I2C_ADDRESS   (0x20)
+
+#define CONFIG_LCD_PANEL_WIDTH      (320)
+#define CONFIG_LCD_PANEL_HEIGHT     (240)
+#define CONFIG_LCD_BL_IO_NUM        (XL9555_IO_NUM_0_7)
+#define CONFIG_LCD_BL_ACTIVE_LEVEL  (1)
+#define CONFIG_LCD_RST_IO_NUM       (GPIO_NUM_NC)
+#define CONFIG_LCD_RST_ACTIVE_LEVEL (0)
+#define CONFIG_LCD_CS_IO_NUM        (GPIO_NUM_1)
+#define CONFIG_LCD_DC_IO_NUM        (GPIO_NUM_2)
+#define CONFIG_LCD_WR_IO_NUM        (GPIO_NUM_42)
+#define CONFIG_LCD_D0_IO_NUM        (GPIO_NUM_40)
+#define CONFIG_LCD_D1_IO_NUM        (GPIO_NUM_39)
+#define CONFIG_LCD_D2_IO_NUM        (GPIO_NUM_38)
+#define CONFIG_LCD_D3_IO_NUM        (GPIO_NUM_12)
+#define CONFIG_LCD_D4_IO_NUM        (GPIO_NUM_11)
+#define CONFIG_LCD_D5_IO_NUM        (GPIO_NUM_10)
+#define CONFIG_LCD_D6_IO_NUM        (GPIO_NUM_9)
+#define CONFIG_LCD_D7_IO_NUM        (GPIO_NUM_46)
+
+#endif

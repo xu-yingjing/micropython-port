@@ -1,1 +1,1 @@
-include(${CMAKE_CURRENT_LIST_DIR}/test/micropython.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/bsp/micropython.cmake)
