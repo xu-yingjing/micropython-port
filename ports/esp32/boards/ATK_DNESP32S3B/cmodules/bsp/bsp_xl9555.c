@@ -89,40 +89,36 @@ static mp_obj_t xl9555_io_config(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(bsp_xl9555_io_config, 3, 4, xl9555_io_config);
 
-static mp_obj_t xl9555_io_set_level(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t xl9555_io_value(size_t n_args, const mp_obj_t *args) {
     int ret;
     bsp_xl9555_obj_t *self = (bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(args[0]);
     mp_int_t io_num = mp_obj_get_int(args[1]);
-    mp_int_t io_level = mp_obj_get_int(args[2]);
+    mp_int_t io_level;
 
-    ret = xl9555_drv_io_set_level(&self->xl9555_drv_obj, io_num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
-    if (ret != 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("XL9555 io set level failed"));
+    if (n_args == 2) {
+        ret = xl9555_drv_io_get_level(&self->xl9555_drv_obj, io_num, &io_level);
+        if (ret != 0) {
+            mp_raise_ValueError(MP_ERROR_TEXT("XL9555 io get level failed"));
+        }
+
+        return MP_OBJ_NEW_SMALL_INT((io_level == XL9555_DRV_IO_LEVEL_LOW) ? 0 : 1);
     }
+    else {
+        io_level = mp_obj_get_int(args[2]);
 
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(bsp_xl9555_io_set_level, 3, 3, xl9555_io_set_level);
+        ret = xl9555_drv_io_set_level(&self->xl9555_drv_obj, io_num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
+        if (ret != 0) {
+            mp_raise_ValueError(MP_ERROR_TEXT("XL9555 io set level failed"));
+        }
 
-static mp_obj_t xl9555_io_get_level(size_t n_args, const mp_obj_t *args) {
-    int ret;
-    bsp_xl9555_obj_t *self = (bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(args[0]);
-    mp_int_t io_num = mp_obj_get_int(args[1]);
-    xl9555_drv_io_level_t io_level;
-
-    ret = xl9555_drv_io_get_level(&self->xl9555_drv_obj, io_num, &io_level);
-    if (ret != 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("XL9555 io get level failed"));
+        return mp_const_none;
     }
-
-    return MP_OBJ_NEW_SMALL_INT((io_level == XL9555_DRV_IO_LEVEL_LOW) ? 0 : 1);
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(bsp_xl9555_io_get_level, 2, 2, xl9555_io_get_level);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(bsp_xl9555_io_value, 2, 3, xl9555_io_value);
 
 static const mp_rom_map_elem_t bsp_xl9555_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_io_config), MP_ROM_PTR(&bsp_xl9555_io_config) },
-    { MP_ROM_QSTR(MP_QSTR_io_set_level), MP_ROM_PTR(&bsp_xl9555_io_set_level) },
-    { MP_ROM_QSTR(MP_QSTR_io_get_level), MP_ROM_PTR(&bsp_xl9555_io_get_level) },
+    { MP_ROM_QSTR(MP_QSTR_io_value), MP_ROM_PTR(&bsp_xl9555_io_value) },
     { MP_ROM_QSTR(MP_QSTR_IO0_0), MP_ROM_INT(XL9555_DRV_IO_NUM_0_0) },
     { MP_ROM_QSTR(MP_QSTR_IO0_1), MP_ROM_INT(XL9555_DRV_IO_NUM_0_1) },
     { MP_ROM_QSTR(MP_QSTR_IO0_2), MP_ROM_INT(XL9555_DRV_IO_NUM_0_2) },
