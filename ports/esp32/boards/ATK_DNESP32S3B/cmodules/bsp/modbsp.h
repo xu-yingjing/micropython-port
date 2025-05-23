@@ -1,0 +1,8 @@
+#ifndef __MODBSP_H
+#define __MODBSP_H
+
+#if MICROPY_PY_MACHINE_I2C || MICROPY_PY_MACHINE_SOFTI2C
+extern const mp_obj_type_t bsp_xl9555_type;
+#endif
+
+#endif
