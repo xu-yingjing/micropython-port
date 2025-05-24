@@ -7,6 +7,7 @@ static const mp_rom_map_elem_t mp_module_bsp_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_XL9555), MP_ROM_PTR(&bsp_xl9555_type) },
 #endif
     { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&bsp_led_type) },
+    { MP_ROM_QSTR(MP_QSTR_BUZZER), MP_ROM_PTR(&bsp_buzzer_type) },
 };
 static MP_DEFINE_CONST_DICT(mp_module_bsp_globals, mp_module_bsp_globals_table);
 

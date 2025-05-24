@@ -192,7 +192,7 @@ static const mp_rom_map_elem_t bsp_xl9555_pin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_IO1_5), MP_ROM_INT(XL9555_DRV_IO_NUM_1_5) },
     { MP_ROM_QSTR(MP_QSTR_IO1_6), MP_ROM_INT(XL9555_DRV_IO_NUM_1_6) },
     { MP_ROM_QSTR(MP_QSTR_IO1_7), MP_ROM_INT(XL9555_DRV_IO_NUM_1_7) },
-    { MP_ROM_QSTR(MP_QSTR_OUTPUT), MP_ROM_INT(XL9555_DRV_IO_MODE_OUTPUT) },
+    { MP_ROM_QSTR(MP_QSTR_OUT), MP_ROM_INT(XL9555_DRV_IO_MODE_OUTPUT) },
     { MP_ROM_QSTR(MP_QSTR_IN), MP_ROM_INT(XL9555_DRV_IO_MODE_INPUT) },
 };
 static MP_DEFINE_CONST_DICT(bsp_xl9555_pin_locals_dict, bsp_xl9555_pin_locals_dict_table);
