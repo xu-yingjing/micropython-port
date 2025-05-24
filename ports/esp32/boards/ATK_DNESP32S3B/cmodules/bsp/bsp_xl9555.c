@@ -1,5 +1,6 @@
 #include "py/runtime.h"
 #include "extmod/modmachine.h"
+#include "modbsp.h"
 #include "drv_xl9555.h"
 
 #if MICROPY_PY_MACHINE_I2C || MICROPY_PY_MACHINE_SOFTI2C
@@ -69,6 +70,83 @@ static mp_obj_t bsp_xl9555_pin_make_new(const mp_obj_type_t *type, size_t n_args
     return MP_OBJ_FROM_PTR(self);
 }
 
+static int xl9555_pin_p_init(mp_obj_base_t *obj, mp_int_t io_mode, mp_int_t io_value) {
+    int ret;
+    mp_int_t io_level = io_value;
+
+    if (obj == NULL) {
+        return -1;
+    }
+
+    if ((io_mode == XL9555_DRV_IO_MODE_OUTPUT) || (io_mode == XL9555_DRV_IO_MODE_INPUT)) {
+        ret = xl9555_drv_io_config(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, io_mode);
+        if (ret != 0) {
+            return ret;
+        }
+    }
+    else {
+        return -1;
+    }
+
+    if (io_level != -1) {
+        if ((io_level == 0) || (io_level == 1)) {
+            ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
+            if (ret != 0) {
+            return ret;
+            }
+        }
+        else {
+        return -1;
+        }
+    }
+
+    return 0;
+}
+
+static int xl9555_pin_p_set(mp_obj_base_t *obj, mp_int_t io_value) {
+    int ret;
+    mp_int_t io_level = io_value;
+
+    if (obj == NULL) {
+        return -1;
+    }
+
+    if ((io_level == 0) || (io_level == 1)) {
+        ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
+        if (ret != 0) {
+            return ret;
+        }
+    }
+    else {
+        return -1;
+    }
+
+    return 0;
+}
+
+static int xl9555_pin_p_get(mp_obj_base_t *obj, mp_int_t *io_value_in) {
+    int ret;
+    xl9555_drv_io_level_t io_level;
+
+    if ((obj == NULL) || (io_value_in == NULL)) {
+        return -1;
+    }
+
+    ret = xl9555_drv_io_get_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, &io_level);
+    if (ret != 0) {
+        return ret;
+    }
+
+    *io_value_in = (io_level == XL9555_DRV_IO_LEVEL_LOW) ? 0 : 1;
+
+    return 0;
+}
+
+static const bsp_xl9555_pin_p_t bsp_xl9555_pin_p = {
+    .init = xl9555_pin_p_init,
+    .set = xl9555_pin_p_set,
+    .get = xl9555_pin_p_get,
+};
 
 static mp_obj_t xl9555_pin_init(size_t n_args, const mp_obj_t *args) {
     int ret;
@@ -79,26 +157,9 @@ static mp_obj_t xl9555_pin_init(size_t n_args, const mp_obj_t *args) {
         io_level = mp_obj_get_int(args[2]);
     }
 
-    if ((io_mode == XL9555_DRV_IO_MODE_OUTPUT) || (io_mode == XL9555_DRV_IO_MODE_INPUT)) {
-        ret = xl9555_drv_io_config(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, io_mode);
-        if (ret != 0) {
-            mp_raise_ValueError(MP_ERROR_TEXT("Pin config failed"));
-        }
-    }
-    else {
-        mp_raise_ValueError(MP_ERROR_TEXT("Invalid pin mode"));
-    }
-
-    if (io_level != -1) {
-        if ((io_level == 0) || (io_level == 1)) {
-            ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
-            if (ret != 0) {
-                mp_raise_ValueError(MP_ERROR_TEXT("Pin value set failed"));
-            }
-        }
-        else {
-            mp_raise_ValueError(MP_ERROR_TEXT("Invalid pin value"));
-        }
+    ret = xl9555_pin_p_init(&self->base, io_mode, io_level);
+    if (ret != 0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Pin init failed"));
     }
 
     return mp_const_none;
@@ -110,26 +171,21 @@ static mp_obj_t xl9555_pin_value(size_t n_args, const mp_obj_t *args) {
     bsp_xl9555_pin_obj_t *self = (bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(args[0]);
 
     if (n_args == 1) {
-        xl9555_drv_io_level_t io_level;
+        mp_int_t io_level;
 
-        ret = xl9555_drv_io_get_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, &io_level);
+        ret = xl9555_pin_p_get(&self->base, &io_level);
         if (ret != 0) {
             mp_raise_ValueError(MP_ERROR_TEXT("Pin value get failed"));
         }
 
-        return MP_OBJ_NEW_SMALL_INT((io_level == XL9555_DRV_IO_LEVEL_LOW) ? 0 : 1);
+        return MP_OBJ_NEW_SMALL_INT(io_level);
     }
     else {
         mp_int_t io_level = mp_obj_get_int(args[1]);
 
-        if ((io_level == 0) || (io_level == 1)) {
-            ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
-            if (ret != 0) {
-                mp_raise_ValueError(MP_ERROR_TEXT("Pin value set failed"));
-            }
-        }
-        else {
-            mp_raise_ValueError(MP_ERROR_TEXT("Invalid pin value"));
+        ret = xl9555_pin_p_set(&self->base, io_level);
+        if (ret != 0) {
+            mp_raise_ValueError(MP_ERROR_TEXT("Pin value get failed"));
         }
 
         return mp_const_none;
@@ -140,6 +196,22 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(bsp_xl9555_pin_value, 1, 2, xl9555_pin_value
 static const mp_rom_map_elem_t bsp_xl9555_pin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&bsp_xl9555_pin_init) },
     { MP_ROM_QSTR(MP_QSTR_value), MP_ROM_PTR(&bsp_xl9555_pin_value) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_0), MP_ROM_INT(XL9555_DRV_IO_NUM_0_0) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_1), MP_ROM_INT(XL9555_DRV_IO_NUM_0_1) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_2), MP_ROM_INT(XL9555_DRV_IO_NUM_0_2) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_3), MP_ROM_INT(XL9555_DRV_IO_NUM_0_3) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_4), MP_ROM_INT(XL9555_DRV_IO_NUM_0_4) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_5), MP_ROM_INT(XL9555_DRV_IO_NUM_0_5) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_6), MP_ROM_INT(XL9555_DRV_IO_NUM_0_6) },
+    { MP_ROM_QSTR(MP_QSTR_IO0_7), MP_ROM_INT(XL9555_DRV_IO_NUM_0_7) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_0), MP_ROM_INT(XL9555_DRV_IO_NUM_1_0) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_1), MP_ROM_INT(XL9555_DRV_IO_NUM_1_1) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_2), MP_ROM_INT(XL9555_DRV_IO_NUM_1_2) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_3), MP_ROM_INT(XL9555_DRV_IO_NUM_1_3) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_4), MP_ROM_INT(XL9555_DRV_IO_NUM_1_4) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_5), MP_ROM_INT(XL9555_DRV_IO_NUM_1_5) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_6), MP_ROM_INT(XL9555_DRV_IO_NUM_1_6) },
+    { MP_ROM_QSTR(MP_QSTR_IO1_7), MP_ROM_INT(XL9555_DRV_IO_NUM_1_7) },
     { MP_ROM_QSTR(MP_QSTR_OUTPUT), MP_ROM_INT(XL9555_DRV_IO_MODE_OUTPUT) },
     { MP_ROM_QSTR(MP_QSTR_IN), MP_ROM_INT(XL9555_DRV_IO_MODE_INPUT) },
 };
@@ -147,9 +219,10 @@ static MP_DEFINE_CONST_DICT(bsp_xl9555_pin_locals_dict, bsp_xl9555_pin_locals_di
 
 MP_DEFINE_CONST_OBJ_TYPE(
     bsp_xl9555_pin_type,
-    MP_QSTR_pin,
+    MP_QSTR_Pin,
     MP_TYPE_FLAG_NONE,
     make_new, bsp_xl9555_pin_make_new,
+    protocol, &bsp_xl9555_pin_p,
     locals_dict, &bsp_xl9555_pin_locals_dict
     );
 
@@ -208,28 +281,12 @@ static mp_obj_t bsp_xl9555_make_new(const mp_obj_type_t *type, size_t n_args, si
 
 static const mp_rom_map_elem_t bsp_xl9555_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&bsp_xl9555_pin_type) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_0), MP_ROM_INT(XL9555_DRV_IO_NUM_0_0) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_1), MP_ROM_INT(XL9555_DRV_IO_NUM_0_1) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_2), MP_ROM_INT(XL9555_DRV_IO_NUM_0_2) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_3), MP_ROM_INT(XL9555_DRV_IO_NUM_0_3) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_4), MP_ROM_INT(XL9555_DRV_IO_NUM_0_4) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_5), MP_ROM_INT(XL9555_DRV_IO_NUM_0_5) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_6), MP_ROM_INT(XL9555_DRV_IO_NUM_0_6) },
-    { MP_ROM_QSTR(MP_QSTR_IO0_7), MP_ROM_INT(XL9555_DRV_IO_NUM_0_7) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_0), MP_ROM_INT(XL9555_DRV_IO_NUM_1_0) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_1), MP_ROM_INT(XL9555_DRV_IO_NUM_1_1) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_2), MP_ROM_INT(XL9555_DRV_IO_NUM_1_2) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_3), MP_ROM_INT(XL9555_DRV_IO_NUM_1_3) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_4), MP_ROM_INT(XL9555_DRV_IO_NUM_1_4) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_5), MP_ROM_INT(XL9555_DRV_IO_NUM_1_5) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_6), MP_ROM_INT(XL9555_DRV_IO_NUM_1_6) },
-    { MP_ROM_QSTR(MP_QSTR_IO1_7), MP_ROM_INT(XL9555_DRV_IO_NUM_1_7) },
 };
 static MP_DEFINE_CONST_DICT(bsp_xl9555_locals_dict, bsp_xl9555_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     bsp_xl9555_type,
-    MP_QSTR_xl9555,
+    MP_QSTR_XL9555,
     MP_TYPE_FLAG_NONE,
     make_new, bsp_xl9555_make_new,
     locals_dict, &bsp_xl9555_locals_dict
