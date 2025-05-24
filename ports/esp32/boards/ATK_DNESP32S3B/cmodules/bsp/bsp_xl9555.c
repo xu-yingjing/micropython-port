@@ -1,5 +1,6 @@
 #include "py/runtime.h"
 #include "extmod/modmachine.h"
+#include "extmod/virtpin.h"
 #include "modbsp.h"
 #include "drv_xl9555.h"
 
@@ -17,7 +18,7 @@ typedef struct _bsp_xl9555_obj_t {
     xl9555_drv_obj_t xl9555_drv_obj;
 } bsp_xl9555_obj_t;
 
-const mp_obj_type_t bsp_xl9555_type;
+static mp_uint_t xl9555_pin_p_ioctl(mp_obj_t obj, mp_uint_t request, uintptr_t arg, int *errcode);
 
 static mp_obj_t bsp_xl9555_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     int ret;
@@ -57,7 +58,7 @@ static mp_obj_t bsp_xl9555_pin_make_new(const mp_obj_type_t *type, size_t n_args
         mp_int_t io_level = vals[ARG_value].u_int;
 
         if ((io_level == 0) || (io_level == 1)) {
-            ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
+            ret = xl9555_pin_p_ioctl(&self->base, MP_PIN_WRITE, io_level, NULL);
             if (ret != 0) {
                 mp_raise_ValueError(MP_ERROR_TEXT("Pin value set failed"));
             }
@@ -70,82 +71,39 @@ static mp_obj_t bsp_xl9555_pin_make_new(const mp_obj_type_t *type, size_t n_args
     return MP_OBJ_FROM_PTR(self);
 }
 
-static int xl9555_pin_p_init(mp_obj_base_t *obj, mp_int_t io_mode, mp_int_t io_value) {
+static mp_uint_t xl9555_pin_p_ioctl(mp_obj_t obj, mp_uint_t request, uintptr_t arg, int *errcode) {
     int ret;
-    mp_int_t io_level = io_value;
+    (void)errcode;
+    bsp_xl9555_pin_obj_t *self = (bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj);
 
-    if (obj == NULL) {
-        return -1;
-    }
+    switch (request) {
+        case MP_PIN_READ: {
+            xl9555_drv_io_level_t io_level;
 
-    if ((io_mode == XL9555_DRV_IO_MODE_OUTPUT) || (io_mode == XL9555_DRV_IO_MODE_INPUT)) {
-        ret = xl9555_drv_io_config(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, io_mode);
-        if (ret != 0) {
-            return ret;
-        }
-    }
-    else {
-        return -1;
-    }
-
-    if (io_level != -1) {
-        if ((io_level == 0) || (io_level == 1)) {
-            ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
+            ret = xl9555_drv_io_get_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, &io_level);
             if (ret != 0) {
-            return ret;
+                return -1;
             }
+
+            return (io_level == XL9555_DRV_IO_LEVEL_LOW) ? 0 : 1;
         }
-        else {
-        return -1;
-        }
-    }
+        case MP_PIN_WRITE: {
+            mp_int_t io_level = (arg == 0) ? 0 : 1;
 
-    return 0;
-}
+            ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
+            if (ret != 0) {
+                return -1;
+            }
 
-static int xl9555_pin_p_set(mp_obj_base_t *obj, mp_int_t io_value) {
-    int ret;
-    mp_int_t io_level = io_value;
-
-    if (obj == NULL) {
-        return -1;
-    }
-
-    if ((io_level == 0) || (io_level == 1)) {
-        ret = xl9555_drv_io_set_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, (io_level == 0) ? XL9555_DRV_IO_LEVEL_LOW : XL9555_DRV_IO_LEVEL_HIGH);
-        if (ret != 0) {
-            return ret;
+            return 0;
         }
     }
-    else {
-        return -1;
-    }
 
-    return 0;
+    return -1;
 }
 
-static int xl9555_pin_p_get(mp_obj_base_t *obj, mp_int_t *io_value_in) {
-    int ret;
-    xl9555_drv_io_level_t io_level;
-
-    if ((obj == NULL) || (io_value_in == NULL)) {
-        return -1;
-    }
-
-    ret = xl9555_drv_io_get_level(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(((bsp_xl9555_pin_obj_t *)MP_OBJ_TO_PTR(obj))->xl9555))->xl9555_drv_obj), ((bsp_xl9555_pin_obj_t *)obj)->num, &io_level);
-    if (ret != 0) {
-        return ret;
-    }
-
-    *io_value_in = (io_level == XL9555_DRV_IO_LEVEL_LOW) ? 0 : 1;
-
-    return 0;
-}
-
-static const bsp_xl9555_pin_p_t bsp_xl9555_pin_p = {
-    .init = xl9555_pin_p_init,
-    .set = xl9555_pin_p_set,
-    .get = xl9555_pin_p_get,
+static const mp_pin_p_t bsp_xl9555_pin_p = {
+    .ioctl = xl9555_pin_p_ioctl,
 };
 
 static mp_obj_t xl9555_pin_init(size_t n_args, const mp_obj_t *args) {
@@ -157,9 +115,26 @@ static mp_obj_t xl9555_pin_init(size_t n_args, const mp_obj_t *args) {
         io_level = mp_obj_get_int(args[2]);
     }
 
-    ret = xl9555_pin_p_init(&self->base, io_mode, io_level);
-    if (ret != 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Pin init failed"));
+    if ((io_mode == XL9555_DRV_IO_MODE_OUTPUT) || (io_mode == XL9555_DRV_IO_MODE_INPUT)) {
+        ret = xl9555_drv_io_config(&(((bsp_xl9555_obj_t *)MP_OBJ_TO_PTR(self->xl9555))->xl9555_drv_obj), self->num, io_mode);
+        if (ret != 0) {
+            mp_raise_ValueError(MP_ERROR_TEXT("Pin config failed"));
+        }
+    }
+    else {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid pin mode"));
+    }
+
+    if (io_level != -1) {
+        if ((io_level == 0) || (io_level == 1)) {
+            ret = xl9555_pin_p_ioctl(&self->base, MP_PIN_WRITE, io_level, NULL);
+            if (ret != 0) {
+                mp_raise_ValueError(MP_ERROR_TEXT("Pin value set failed"));
+            }
+        }
+        else {
+            mp_raise_ValueError(MP_ERROR_TEXT("Invalid pin value"));
+        }
     }
 
     return mp_const_none;
@@ -173,8 +148,8 @@ static mp_obj_t xl9555_pin_value(size_t n_args, const mp_obj_t *args) {
     if (n_args == 1) {
         mp_int_t io_level;
 
-        ret = xl9555_pin_p_get(&self->base, &io_level);
-        if (ret != 0) {
+        io_level = xl9555_pin_p_ioctl(&self->base, MP_PIN_READ, 0, NULL);
+        if (io_level < 0) {
             mp_raise_ValueError(MP_ERROR_TEXT("Pin value get failed"));
         }
 
@@ -183,9 +158,14 @@ static mp_obj_t xl9555_pin_value(size_t n_args, const mp_obj_t *args) {
     else {
         mp_int_t io_level = mp_obj_get_int(args[1]);
 
-        ret = xl9555_pin_p_set(&self->base, io_level);
-        if (ret != 0) {
-            mp_raise_ValueError(MP_ERROR_TEXT("Pin value get failed"));
+        if ((io_level == 0) || (io_level == 1)) {
+            ret = xl9555_pin_p_ioctl(&self->base, MP_PIN_WRITE, io_level, NULL);
+            if (ret != 0) {
+                mp_raise_ValueError(MP_ERROR_TEXT("Pin value set failed"));
+            }
+        }
+        else {
+            mp_raise_ValueError(MP_ERROR_TEXT("Invalid pin value"));
         }
 
         return mp_const_none;
